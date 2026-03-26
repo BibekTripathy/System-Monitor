@@ -13,6 +13,14 @@ function formatBytes(bytes) {
   return `${val.toFixed(1)} ${units[i]}`;
 }
 
+function formatUptime(seconds) {
+  if (!seconds) return '0s';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return `${h}h ${m}m ${s}s`;
+}
+
 export default function SystemMetrics() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -53,10 +61,14 @@ export default function SystemMetrics() {
     );
   }
 
+  // Handle new backend data shape
+  const cpuVal = typeof data.cpu === 'object' ? data.cpu.total : data.cpu;
+  const mainDisk = Array.isArray(data.disk) ? data.disk[0] : data.disk;
+
   const metrics = [
     {
       label: 'CPU',
-      value: data.cpu,
+      value: cpuVal,
       color: 'cyan',
       gradient: 'from-cyan-500 to-blue-500',
     },
@@ -68,9 +80,9 @@ export default function SystemMetrics() {
       gradient: 'from-emerald-500 to-teal-500',
     },
     {
-      label: 'Disk',
-      value: data.disk.percent,
-      sub: `${formatBytes(data.disk.used)} / ${formatBytes(data.disk.total)}`,
+      label: 'Disk' + (Array.isArray(data.disk) && data.disk.length > 1 ? ` (${mainDisk.mountpoint})` : ''),
+      value: mainDisk.percent,
+      sub: `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.total)}`,
       color: 'violet',
       gradient: 'from-violet-500 to-purple-500',
     },
@@ -78,9 +90,16 @@ export default function SystemMetrics() {
 
   return (
     <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6">
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">
-        System Resources
-      </h2>
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+          System Resources
+        </h2>
+        {data.uptime && (
+          <span className="text-[10px] text-slate-500 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+            UPTIME: {formatUptime(data.uptime)}
+          </span>
+        )}
+      </div>
       <div className="space-y-5">
         {metrics.map((m) => (
           <div key={m.label}>
@@ -105,3 +124,4 @@ export default function SystemMetrics() {
     </div>
   );
 }
+
