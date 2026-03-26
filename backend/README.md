@@ -20,12 +20,21 @@ A simple Flask-based backend API for collecting and serving system metrics such 
 
 * Python 3.8+
 * pip
+* Docker (running)
 
 ---
 
 ## Setup
 
-### 1. Open terminal in backend directory
+### 1. Docker Permissions (Linux)
+To run the Docker APIs without root, add your user to the `docker` group:
+
+```bash
+sudo usermod -aG docker $USER
+```
+*Note: You may need to log out and back in for changes to take effect.*
+
+### 2. Open terminal in backend directory
 
 ```bash
 cd backend
@@ -74,13 +83,17 @@ http://127.0.0.1:5000
 
 ## API Endpoints
 
-### GET `/api/metrics`
+### 1. System Metrics
+* **GET `/api/metrics/system`** - Fetch CPU, Memory, and Disk stats.
 
-Returns system metrics in JSON format, including:
+### 2. Docker Containers
+* **GET `/api/docker/containers`** - List all containers.
+* **POST `/api/docker/containers/<id>/control`** - Start/Stop/Restart containers.
+* **GET `/api/docker/containers/<id>/logs`** - Fetch container logs.
 
-* CPU usage
-* Memory usage
-* Disk usage
+### 3. OS Processes
+* **GET `/api/processes/`** - List top processes by CPU.
+* **POST `/api/processes/<pid>/kill`** - Terminate a specific process.
 
 ---
 
@@ -90,16 +103,21 @@ Returns system metrics in JSON format, including:
 backend/
   run.py
   requirements.txt
+  API_DOCS.md
   src/
     app.py
-    config/
-      config.py
     routes/
       metrics_routes.py
+      docker_routes.py
+      process_routes.py
     controllers/
       metrics_controller.py
+      docker_controller.py
+      process_controller.py
     services/
       metrics_service.py
+      docker_service.py
+      process_service.py
     utils/
       system_utils.py
 ```
