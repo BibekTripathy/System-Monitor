@@ -12,6 +12,7 @@ class ProcessService:
 
         time.sleep(0.5)
         
+        processes = []
         for proc in psutil.process_iter(['pid', 'name', 'username', 'status', 'cpu_percent', 'memory_percent']):
             try:
                 processes.append(proc.info)
