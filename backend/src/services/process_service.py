@@ -1,23 +1,10 @@
-from time import time
-import psutil
-<<<<<<< HEAD
-=======
 import time
+import psutil
 
->>>>>>> 1863400e946dc7844993140af7aebb3fcdc2fba4
 class ProcessService:
     def list_processes(self, limit=50):
-        # Prime CPU data
-        for p in psutil.process_iter():
-            try:
-                p.cpu_percent(interval=None)
-            except:
-                continue
-
-        time.sleep(0.5)
-
-        processes = []
-        for p in psutil.process_iter():
+        # Prime CPU data (first pass)
+        for p in psutil.process_iter(['pid']):
             try:
                 p.cpu_percent(interval=None)
             except:
