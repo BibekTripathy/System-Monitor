@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { dockerAPI } from '../services/api';
 
-export default function DockerStatus() {
+export default function DockerStatus({ pollingInterval = 5000 }) {
   const [containers, setContainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,9 +21,14 @@ export default function DockerStatus() {
 
   useEffect(() => {
     fetchContainers();
-    const id = setInterval(fetchContainers, 5000);
-    return () => clearInterval(id);
-  }, []);
+    let id;
+    if (pollingInterval) {
+      id = setInterval(fetchContainers, pollingInterval);
+    }
+    return () => {
+      if (id) clearInterval(id);
+    };
+  }, [pollingInterval]);
 
   const handleAction = async (id, action) => {
     try {

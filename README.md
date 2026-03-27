@@ -24,6 +24,8 @@ System-Monitor/
 │   ├── run.py
 │   ├── requirements.txt
 │   └── README.md
+├── frontend/         # React frontend application
+├── start.py          # Automated setup and start script
 ├── LICENSE
 └── README.md
 ```
@@ -33,9 +35,12 @@ System-Monitor/
 ### Prerequisites
 
 - Python 3.8 or higher
+- Node.js and npm (for the frontend)
 - pip (Python package installer)
 
-### Installation
+### Automated Setup (Recommended)
+
+The easiest way to start both the frontend and backend simultaneously is using the provided orchestration script. This script automatically handles creating a virtual environment, installing all dependencies, and launching the servers.
 
 1. Clone the repository:
    ```bash
@@ -43,26 +48,37 @@ System-Monitor/
    cd System-Monitor
    ```
 
-2. Navigate to the backend directory:
+2. Run the start script:
+   ```bash
+   python start.py
+   ```
+
+Both servers will start up. The frontend typically runs at `http://localhost:5173` and the API at `http://127.0.0.1:5000`. Press `Ctrl+C` in the terminal to gracefully shut down both services.
+
+### Manual Backend Setup
+
+If you prefer to run the backend manually, follow these steps:
+
+1. Navigate to the backend directory:
    ```bash
    cd backend
    ```
 
-3. Create a virtual environment:
+2. Create a virtual environment:
    ```bash
    python -m venv venv
    ```
 
-4. Activate the virtual environment:
+3. Activate the virtual environment:
    - Windows: `venv\Scripts\activate`
    - macOS/Linux: `source venv/bin/activate`
 
-5. Install dependencies:
+4. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-6. Run the application:
+5. Run the application:
    ```bash
    python run.py
    ```

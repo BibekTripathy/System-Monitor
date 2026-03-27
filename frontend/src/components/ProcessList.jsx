@@ -10,18 +10,19 @@ function SortArrow({ active, direction }) {
   );
 }
 
-export default function ProcessList({ compact = false }) {
+export default function ProcessList({ compact = false, pollingInterval = 5000 }) {
   const [processes, setProcesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortKey, setSortKey] = useState('cpu_percent');
   const [sortDir, setSortDir] = useState('desc');
+  const [processLimit, setProcessLimit] = useState(compact ? 15 : 50);
 
   useEffect(() => {
     let active = true;
     const poll = async () => {
       try {
-        const data = await processAPI.getProcesses(compact ? 15 : 50);
+        const data = await processAPI.getProcesses(processLimit);
         if (active) { setProcesses(data); setError(null); }
       } catch (e) {
         if (active) setError(e.message);
@@ -30,9 +31,17 @@ export default function ProcessList({ compact = false }) {
       }
     };
     poll();
-    const id = setInterval(poll, 5000);
-    return () => { active = false; clearInterval(id); };
-  }, [compact]);
+    
+    let id;
+    if (pollingInterval) {
+      id = setInterval(poll, pollingInterval);
+    }
+    
+    return () => { 
+      active = false; 
+      if (id) clearInterval(id); 
+    };
+  }, [processLimit, pollingInterval]);
 
   const handleSort = (key) => {
     if (sortKey === key) {
@@ -92,9 +101,32 @@ export default function ProcessList({ compact = false }) {
         <h2 className="text-sm font-semibold theme-muted uppercase tracking-wider">
           {compact ? 'Top Processes' : 'All Processes'}
         </h2>
-        <span className="text-xs theme-muted bg-slate-700/50 px-2 py-1 rounded">
-          {processes.length} shown
-        </span>
+        
+        <div className="flex items-center gap-3">
+          {!compact && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs theme-muted">LIMIT:</span>
+              <select
+                value={processLimit.toString()}
+                onChange={(e) => setProcessLimit(Number(e.target.value))}
+                className="text-xs rounded px-2 py-1 border cursor-pointer outline-none transition-colors"
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-secondary)',
+                  borderColor: 'var(--border-card)',
+                }}
+              >
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+              </select>
+            </div>
+          )}
+          <span className="text-xs theme-muted bg-slate-700/50 px-2 py-1 rounded">
+            {processes.length} shown
+          </span>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto rounded-lg border border-slate-700/40">

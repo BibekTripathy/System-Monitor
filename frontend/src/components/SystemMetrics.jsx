@@ -159,7 +159,7 @@ function BarChart({ metrics }) {
 }
 
 /* ── Main Component ─────────────────────────────────────────────── */
-export default function SystemMetrics() {
+export default function SystemMetrics({ pollingInterval = 3000 }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [chartType, setChartType] = useState('bar');
@@ -175,9 +175,17 @@ export default function SystemMetrics() {
       }
     };
     poll();
-    const id = setInterval(poll, 3000);
-    return () => { active = false; clearInterval(id); };
-  }, []);
+    
+    let id;
+    if (pollingInterval) {
+      id = setInterval(poll, pollingInterval);
+    }
+    
+    return () => { 
+      active = false; 
+      if (id) clearInterval(id); 
+    };
+  }, [pollingInterval]);
 
   if (error) {
     return (

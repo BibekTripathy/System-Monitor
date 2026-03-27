@@ -3,8 +3,8 @@ import time
 
 def get_cpu_info():
     return {
-        "total": psutil.cpu_percent(interval=1),
-        "per_core": psutil.cpu_percent(interval=1, percpu=True)
+        "total": psutil.cpu_percent(interval=None),
+        "per_core": psutil.cpu_percent(interval=None, percpu=True)
     }
 
 def get_memory_info():
