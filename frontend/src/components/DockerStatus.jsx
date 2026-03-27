@@ -56,20 +56,20 @@ export default function DockerStatus() {
   }
 
   return (
-    <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6">
+    <div className="rounded-xl theme-card p-6">
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+        <h2 className="text-sm font-semibold theme-muted uppercase tracking-wider">
           Docker Containers
         </h2>
-        <span className="text-xs text-slate-500 bg-slate-700/50 px-2 py-1 rounded">
+        <span className="text-xs theme-muted px-2 py-1 rounded" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
           {containers.length} containers
         </span>
       </div>
 
       {loading ? (
-        <div className="text-slate-500 animate-pulse p-4 text-center">Loading…</div>
+        <div className="theme-muted animate-pulse p-4 text-center">Loading…</div>
       ) : containers.length === 0 ? (
-        <div className="text-slate-500 text-sm text-center py-8">
+        <div className="theme-muted text-sm text-center py-8">
           No Docker containers found. Is Docker running?
         </div>
       ) : (

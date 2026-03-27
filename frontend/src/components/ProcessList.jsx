@@ -1,10 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { processAPI } from '../services/api';
+
+function SortArrow({ active, direction }) {
+  return (
+    <span className="inline-flex flex-col ml-1 text-[9px] leading-[9px] align-middle">
+      <span className={active && direction === 'asc' ? 'text-cyan-400' : 'text-slate-600'}>▲</span>
+      <span className={active && direction === 'desc' ? 'text-cyan-400' : 'text-slate-600'}>▼</span>
+    </span>
+  );
+}
 
 export default function ProcessList({ compact = false }) {
   const [processes, setProcesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortKey, setSortKey] = useState('cpu_percent');
+  const [sortDir, setSortDir] = useState('desc');
 
   useEffect(() => {
     let active = true;
@@ -23,6 +34,34 @@ export default function ProcessList({ compact = false }) {
     return () => { active = false; clearInterval(id); };
   }, [compact]);
 
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
+  const sorted = useMemo(() => {
+    const copy = [...processes];
+    copy.sort((a, b) => {
+      let aVal = a[sortKey];
+      let bVal = b[sortKey];
+      // Handle nulls
+      if (aVal == null) aVal = typeof bVal === 'number' ? -Infinity : '';
+      if (bVal == null) bVal = typeof aVal === 'number' ? -Infinity : '';
+      // String comparison
+      if (typeof aVal === 'string') {
+        const cmp = aVal.localeCompare(bVal, undefined, { sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      // Number comparison
+      return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+    return copy;
+  }, [processes, sortKey, sortDir]);
+
   const handleKill = async (pid) => {
     if (!window.confirm(`Kill process ${pid}?`)) return;
     try {
@@ -40,40 +79,53 @@ export default function ProcessList({ compact = false }) {
     );
   }
 
+  const sortableHeaders = [
+    { key: 'name', label: 'Name', align: 'left', show: true },
+    { key: 'username', label: 'User', align: 'left', show: !compact },
+    { key: 'cpu_percent', label: 'CPU %', align: 'right', show: true },
+    { key: 'memory_percent', label: 'Mem %', align: 'right', show: true },
+  ];
+
   return (
-    <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-6 h-full flex flex-col">
+    <div className="rounded-xl theme-card p-6 h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+        <h2 className="text-sm font-semibold theme-muted uppercase tracking-wider">
           {compact ? 'Top Processes' : 'All Processes'}
         </h2>
-        <span className="text-xs text-slate-500 bg-slate-700/50 px-2 py-1 rounded">
+        <span className="text-xs theme-muted bg-slate-700/50 px-2 py-1 rounded">
           {processes.length} shown
         </span>
       </div>
 
       <div className="flex-1 overflow-auto rounded-lg border border-slate-700/40">
         {loading ? (
-          <div className="p-8 text-center text-slate-500 animate-pulse">Loading…</div>
+          <div className="p-8 text-center theme-muted animate-pulse">Loading…</div>
         ) : (
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-slate-500 uppercase bg-slate-900/60 sticky top-0">
+            <thead className="text-xs theme-muted uppercase bg-slate-900/60 sticky top-0">
               <tr>
                 <th className="px-4 py-2.5">PID</th>
-                <th className="px-4 py-2.5">Name</th>
-                {!compact && <th className="px-4 py-2.5">User</th>}
-                <th className="px-4 py-2.5 text-right">CPU %</th>
-                <th className="px-4 py-2.5 text-right">Mem %</th>
+                {sortableHeaders.filter(h => h.show).map(h => (
+                  <th
+                    key={h.key}
+                    className={`px-4 py-2.5 cursor-pointer select-none hover:text-cyan-400 transition-colors ${h.align === 'right' ? 'text-right' : ''}`}
+                    onClick={() => handleSort(h.key)}
+                  >
+                    {h.label}
+                    <SortArrow active={sortKey === h.key} direction={sortDir} />
+                  </th>
+                ))}
                 {!compact && <th className="px-4 py-2.5 text-right">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/30">
-              {processes.map((p) => (
+              {sorted.map((p) => (
                 <tr key={p.pid} className="hover:bg-slate-700/20 transition-colors group">
-                  <td className="px-4 py-2 font-mono text-xs text-slate-400">{p.pid}</td>
-                  <td className="px-4 py-2 text-slate-200 truncate max-w-[180px]" title={p.name}>
+                  <td className="px-4 py-2 font-mono text-xs theme-muted">{p.pid}</td>
+                  <td className="px-4 py-2 theme-text truncate max-w-[180px]" title={p.name}>
                     {p.name}
                   </td>
-                  {!compact && <td className="px-4 py-2 text-slate-500">{p.username || '—'}</td>}
+                  {!compact && <td className="px-4 py-2 theme-muted">{p.username || '—'}</td>}
                   <td className="px-4 py-2 text-right font-mono text-cyan-400">
                     {(p.cpu_percent ?? 0).toFixed(1)}
                   </td>

@@ -5,22 +5,24 @@ import ProcessList from './components/ProcessList';
 
 function App() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [darkMode, setDarkMode] = useState(true);
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-100 p-4 md:p-8">
+    <div className={`min-h-screen p-4 md:p-8 transition-colors duration-300 ${darkMode ? '' : 'light'}`}
+         style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       {/* Header */}
       <header className="mb-8">
         <div className="flex items-center gap-3 mb-1">
           <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
-          <h1 className="text-2xl font-bold tracking-tight text-white">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
             System Monitor
           </h1>
         </div>
-        <p className="text-slate-500 text-sm ml-6">Real-time system & container telemetry</p>
+        <p className="text-sm ml-6" style={{ color: 'var(--text-muted)' }}>Real-time system & container telemetry</p>
       </header>
 
       {/* Tab Navigation */}
-      <nav className="flex gap-1 mb-6 bg-slate-800/60 rounded-lg p-1 w-fit">
+      <nav className="flex gap-1 mb-6 rounded-lg p-1 w-fit" style={{ backgroundColor: 'var(--bg-card)' }}>
         {['overview', 'processes', 'docker'].map((tab) => (
           <button
             key={tab}
@@ -28,8 +30,9 @@ function App() {
             className={`px-4 py-2 rounded-md text-sm font-medium capitalize transition-all ${
               activeTab === tab
                 ? 'bg-cyan-500/20 text-cyan-400 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+                : 'hover:bg-slate-700/50'
             }`}
+            style={{ color: activeTab === tab ? undefined : 'var(--text-secondary)' }}
           >
             {tab}
           </button>
@@ -51,6 +54,16 @@ function App() {
         {activeTab === 'processes' && <ProcessList />}
         {activeTab === 'docker' && <DockerStatus />}
       </main>
+
+      {/* Theme Toggle Button — bottom-left */}
+      <button
+        className="theme-toggle-btn"
+        onClick={() => setDarkMode((d) => !d)}
+        title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label="Toggle theme"
+      >
+        {darkMode ? '☀️' : '🌙'}
+      </button>
     </div>
   );
 }
