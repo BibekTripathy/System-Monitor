@@ -2,7 +2,20 @@ import time
 import psutil
 
 class ProcessService:
+    def __init__(self):
+        self._primed = False
+
     def list_processes(self, limit=50):
+        if not self._primed:
+            # Prime CPU data (first pass)
+            for p in psutil.process_iter(['pid']):
+                try:
+                    p.cpu_percent(interval=None)
+                except:
+                    continue
+            time.sleep(0.5)
+            self._primed = True
+
         processes = []
         for proc in psutil.process_iter(['pid', 'name', 'username', 'status', 'cpu_percent', 'memory_percent']):
             try:
