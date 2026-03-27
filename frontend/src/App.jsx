@@ -8,9 +8,18 @@ function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [pollingInterval, setPollingInterval] = useState(3000);
 
+  const toggleTheme = () => {
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        setDarkMode((d) => !d);
+      });
+    } else {
+      setDarkMode((d) => !d);
+    }
+  };
+
   return (
-    <div className={`min-h-screen p-4 md:p-8 transition-colors duration-300 ${darkMode ? '' : 'light'}`}
-         style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+    <div className={`app-container p-4 md:p-8 transition-colors duration-300 ${darkMode ? '' : 'light'}`}>
       {/* Header */}
       <header className="mb-8 flex justify-between items-start">
         <div>
@@ -82,7 +91,7 @@ function App() {
       {/* Theme Toggle Button — bottom-left */}
       <button
         className="theme-toggle-btn"
-        onClick={() => setDarkMode((d) => !d)}
+        onClick={toggleTheme}
         title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         aria-label="Toggle theme"
       >

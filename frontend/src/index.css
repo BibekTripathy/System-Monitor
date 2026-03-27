@@ -2,46 +2,102 @@
 
 /* ── Theme Variables ──────────────────────────────────────────── */
 :root {
-  --bg-primary: #0f172a;
-  --bg-secondary: rgba(30, 41, 59, 0.6);
-  --bg-tertiary: #1e293b;
-  --bg-card: rgba(30, 41, 59, 0.6);
-  --border-card: rgba(51, 65, 85, 0.5);
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --scrollbar-track: #1e293b;
-  --scrollbar-thumb: #475569;
-  --scrollbar-hover: #64748b;
-  --table-header-bg: rgba(15, 23, 42, 0.6);
-  --hover-row: rgba(51, 65, 85, 0.2);
+  /* Dark Mode: Deep sea blues */
+  --bg-primary: #040d1a;
+  --bg-secondary: rgba(10, 25, 47, 0.4);
+  --bg-tertiary: rgba(17, 34, 64, 0.6);
+  --bg-card: rgba(10, 25, 47, 0.55);
+  --border-card: rgba(0, 240, 255, 0.2);
+  --text-primary: #e6f1ff;
+  --text-secondary: #8892b0;
+  --text-muted: #64ffda;
+  --scrollbar-track: #0a192f;
+  --scrollbar-thumb: #1d3354;
+  --scrollbar-hover: #3a506b;
+  --table-header-bg: rgba(4, 13, 26, 0.8);
+  --hover-row: rgba(0, 240, 255, 0.05);
+
+  --accent-neon: #00f0ff;
+  --bg-map-opacity: 0.05;
+  
+  /* Background Pattern: Blue Gridlines */
+  --bg-pattern: 
+    linear-gradient(rgba(0, 180, 255, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 180, 255, 0.4) 1px, transparent 1px);
+  --bg-pattern-size: 50px 50px;
+
+  /* Chart Colors */
+  --chart-cpu: #00f0ff;
+  --chart-mem: #40E0D0; /* Turquoise */
+  --chart-disk: #8b5cf6;
 }
 
 .light {
-  --bg-primary: #f1f5f9;
-  --bg-secondary: rgba(226, 232, 240, 0.6);
-  --bg-tertiary: #e2e8f0;
-  --bg-card: rgba(255, 255, 255, 0.8);
-  --border-card: rgba(203, 213, 225, 0.6);
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --scrollbar-track: #e2e8f0;
-  --scrollbar-thumb: #94a3b8;
-  --scrollbar-hover: #64748b;
-  --table-header-bg: rgba(241, 245, 249, 0.9);
-  --hover-row: rgba(203, 213, 225, 0.3);
+  /* Light Mode: Sky Blue */
+  --bg-primary: #87CEEB;
+  --bg-secondary: rgba(224, 242, 254, 0.7);
+  --bg-tertiary: rgba(186, 230, 253, 0.6);
+  --bg-card: rgba(255, 255, 255, 0.65);
+  --border-card: rgba(125, 211, 252, 0.5);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --scrollbar-track: #e0f2fe;
+  --scrollbar-thumb: #7dd3fc;
+  --scrollbar-hover: #38bdf8;
+  --table-header-bg: rgba(255, 255, 255, 0.85);
+  --hover-row: rgba(255, 255, 255, 0.4);
+
+  --accent-neon: #0284c7;
+  --bg-map-opacity: 0.1;
+
+  /* Background Pattern: Thin White Wavy Lines (High Opacity) */
+  --bg-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='30' viewBox='0 0 100 30'%3E%3Cpath d='M0 15 Q 25 30, 50 15 T 100 15' fill='none' stroke='%23ffffff' stroke-width='2' stroke-opacity='0.9'/%3E%3C/svg%3E");
+  --bg-pattern-size: 100px 30px;
+
+  /* Chart Colors - Cohesive to Light Theme */
+  --chart-cpu: #0284c7;
+  --chart-mem: #0d9488; /* Darker Turquoise for contrast */
+  --chart-disk: #7c3aed;
 }
 
 @layer base {
   body {
     margin: 0;
-    min-height: 100vh;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
     font-family: 'Inter', 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+.app-container {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  
+  /* Background Pattern Injection */
+  background-image: var(--bg-pattern);
+  background-size: var(--bg-pattern-size);
+  background-position: center center;
+  background-attachment: fixed;
+
+  color: var(--text-primary);
+}
+
+/* ── Theme Transition (Horizontal Wipe) ───────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: horizontal-wipe 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes horizontal-wipe {
+  from {
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+  }
+  to {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
   }
 }
 
@@ -54,6 +110,23 @@
   border-color: var(--border-card);
   border-width: 1px;
   border-style: solid;
+  border-radius: 16px;
+  
+  /* Glassmorphism & 3D Effect */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.2),
+    0 8px 32px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.theme-card:hover {
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.2),
+    0 8px 32px rgba(0, 240, 255, 0.1);
+  border-color: var(--accent-neon);
 }
 .theme-text {
   color: var(--text-primary);

@@ -21,135 +21,135 @@ function formatUptime(seconds) {
   return `${h}h ${m}m ${s}s`;
 }
 
-/* ── SVG Pie / Donut Chart ──────────────────────────────────────── */
-function PieChart({ metrics }) {
-  const size = 160;
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = 55;
+/* ── Line Chart ──────────────────────────────────────── */
+function LineChart({ history }) {
+  if (!history || history.length < 2) {
+    return <div className="text-center text-xs theme-muted my-16">Collecting historical data...</div>;
+  }
+  
+  const width = 300;
+  const height = 150;
+  const maxHistory = 20;
+  const stepX = width / (maxHistory - 1);
 
-  // Build pie slices
-  const total = metrics.reduce((s, m) => s + (m.value ?? 0), 0) || 1;
-  let cumAngle = -90; // start from top
-
-  const colors = ['#22d3ee', '#10b981', '#8b5cf6'];
-
-  const slices = metrics.map((m, i) => {
-    const value = m.value ?? 0;
-    const angle = (value / total) * 360;
-    const startAngle = cumAngle;
-    const endAngle = cumAngle + angle;
-    cumAngle = endAngle;
-
-    const startRad = (Math.PI / 180) * startAngle;
-    const endRad = (Math.PI / 180) * endAngle;
-
-    const x1 = cx + radius * Math.cos(startRad);
-    const y1 = cy + radius * Math.sin(startRad);
-    const x2 = cx + radius * Math.cos(endRad);
-    const y2 = cy + radius * Math.sin(endRad);
-
-    const largeArc = angle > 180 ? 1 : 0;
-
-    const d = [
-      `M ${cx} ${cy}`,
-      `L ${x1} ${y1}`,
-      `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
-      `Z`
-    ].join(' ');
-
-    return (
-      <path key={m.label} d={d} fill={colors[i]}
-        opacity={0.85} className="transition-all duration-500">
-        <title>{m.label}: {value.toFixed(1)}%</title>
-      </path>
-    );
-  });
+  // Extract points
+  const pointsCpu = history.map(h => typeof h.cpu === 'object' ? h.cpu.total : h.cpu);
+  const pointsMem = history.map(h => h.memory.percent);
+  const pointsDisk = history.map(h => Array.isArray(h.disk) ? h.disk[0].percent : h.disk.percent);
+  
+  const generatePath = (points) => {
+    return points.map((p, i) => {
+      // align to the right if history is less than max
+      const offsetIdx = maxHistory - history.length + i;
+      const x = offsetIdx * stepX;
+      const y = height - (Math.min(p ?? 0, 100) / 100) * height;
+      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+    }).join(' ');
+  };
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {slices}
-        <circle cx={cx} cy={cy} r={25} fill="var(--bg-primary)" />
+    <div className="flex flex-col items-center w-full mt-4">
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible" preserveAspectRatio="none">
+        {/* Grid lines */}
+        <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="var(--border-card)" strokeDasharray="4 4" />
+        <line x1="0" y1={0} x2={width} y2={0} stroke="var(--border-card)" strokeDasharray="4 4" />
+        <line x1="0" y1={height} x2={width} y2={height} stroke="var(--border-card)" />
+        
+        {/* Lines */}
+        <path d={generatePath(pointsCpu)} fill="none" stroke="var(--chart-cpu)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
+        <path d={generatePath(pointsMem)} fill="none" stroke="var(--chart-mem)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
+        <path d={generatePath(pointsDisk)} fill="none" stroke="var(--chart-disk)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
       </svg>
-      <div className="flex gap-4 text-xs">
-        {metrics.map((m, i) => (
-          <span key={m.label} className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full inline-block" style={{ background: colors[i] }} />
-            <span style={{ color: 'var(--text-secondary)' }}>{m.label}</span>
-          </span>
-        ))}
+      
+      {/* Legend */}
+      <div className="flex gap-4 mt-8 text-xs drop-shadow-md">
+         <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-cpu)', color: 'var(--chart-cpu)' }} /> <span style={{ color: 'var(--text-secondary)' }}>CPU</span></div>
+         <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-mem)', color: 'var(--chart-mem)' }} /> <span style={{ color: 'var(--text-secondary)' }}>Memory</span></div>
+         <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-disk)', color: 'var(--chart-disk)' }} /> <span style={{ color: 'var(--text-secondary)' }}>Disk</span></div>
       </div>
     </div>
   );
 }
 
-/* ── SVG Gauge Chart ────────────────────────────────────────────── */
+/* ── SVG Gauge Chart (Radar-style) ────────────────────────────────────────────── */
 function GaugeChart({ metrics }) {
-  const colors = ['#22d3ee', '#10b981', '#8b5cf6'];
-
   return (
-    <div className="flex flex-wrap justify-center gap-4">
-      {metrics.map((m, i) => {
-        const value = m.value ?? 0;
-        const radius = 40;
-        const circumference = Math.PI * radius; // semicircle
-        const offset = circumference - (value / 100) * circumference;
+    <div className="flex flex-col items-center justify-center relative mt-4">
+      {/* Radar screen container */}
+      <div className="relative w-48 h-48 rounded-full overflow-hidden" 
+           style={{ backgroundColor: 'var(--bg-tertiary)', border: '2px solid var(--border-card)', boxShadow: '0 0 25px color-mix(in srgb, var(--accent-neon) 20%, transparent)' }}>
+        
+        {/* Radar grid markings */}
+        <div className="absolute inset-0 rounded-full border opacity-30 m-6" style={{ borderColor: 'var(--accent-neon)' }} />
+        <div className="absolute inset-0 rounded-full border opacity-20 m-12" style={{ borderColor: 'var(--accent-neon)' }} />
+        <div className="absolute top-1/2 left-0 w-full h-px opacity-30" style={{ backgroundColor: 'var(--accent-neon)' }} />
+        <div className="absolute left-1/2 top-0 w-px h-full opacity-30" style={{ backgroundColor: 'var(--accent-neon)' }} />
 
-        return (
-          <div key={m.label} className="flex flex-col items-center">
-            <svg width="100" height="60" viewBox="0 0 100 60">
-              {/* Background arc */}
-              <path
-                d="M 10 55 A 40 40 0 0 1 90 55"
+        {/* Concentric Data Rings */}
+        <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full -rotate-90">
+          {metrics.map((m, i) => {
+            const r = 40 - i * 12; // Radius decreases for each metric: 40, 28, 16
+            const c = 2 * Math.PI * r;
+            const val = Math.min(m.value ?? 0, 100);
+            const offset = c - (val / 100) * c;
+            return (
+              <circle
+                key={m.label}
+                cx="50"
+                cy="50"
+                r={r}
                 fill="none"
-                stroke="var(--bg-tertiary)"
+                stroke={m.color}
                 strokeWidth="6"
                 strokeLinecap="round"
-              />
-              {/* Value arc */}
-              <path
-                d="M 10 55 A 40 40 0 0 1 90 55"
-                fill="none"
-                stroke={colors[i]}
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={`${circumference}`}
+                strokeDasharray={c}
                 strokeDashoffset={offset}
                 className="transition-all duration-700 ease-out"
+                opacity="0.85"
+                style={{ filter: `drop-shadow(0 0 4px ${m.color})` }}
               />
-              <text x="50" y="50" textAnchor="middle" fill={colors[i]}
-                    fontSize="14" fontWeight="bold" fontFamily="monospace">
-                {value.toFixed(0)}%
-              </text>
-            </svg>
-            <span className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{m.label}</span>
-          </div>
-        );
-      })}
+            );
+          })}
+        </svg>
+      </div>
+      
+      {/* Legend */}
+      <div className="flex gap-4 mt-6 text-xs drop-shadow-md">
+         {metrics.map((m) => (
+           <div key={m.label} className="flex items-center gap-1">
+             <span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: m.color, color: m.color }} />
+             <span style={{ color: 'var(--text-secondary)' }}>{m.label}: </span>
+             <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{(m.value ?? 0).toFixed(0)}%</span>
+           </div>
+         ))}
+      </div>
     </div>
   );
 }
 
-/* ── Bar Chart (original) ───────────────────────────────────────── */
+/* ── Bar Chart (original styled) ───────────────────────────────────────── */
 function BarChart({ metrics }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 mt-4">
       {metrics.map((m) => (
         <div key={m.label}>
-          <div className="flex justify-between items-end mb-1.5">
+          <div className="flex justify-between items-end mb-2">
             <div>
-              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{m.label}</span>
-              {m.sub && <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>{m.sub}</span>}
+              <span className="text-sm font-bold uppercase tracking-wider" style={{ color: m.color || 'var(--text-primary)' }}>{m.label}</span>
+              {m.sub && <span className="text-xs ml-2 opacity-80" style={{ color: 'var(--text-muted)' }}>{m.sub}</span>}
             </div>
             <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
               {(m.value ?? 0).toFixed(1)}%
             </span>
           </div>
-          <div className="h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+          <div className="h-2.5 w-full rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border" style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-card)' }}>
             <div
-              className={`h-full rounded-full bg-gradient-to-r ${m.gradient} transition-all duration-700 ease-out`}
-              style={{ width: `${Math.min(m.value ?? 0, 100)}%` }}
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{ 
+                width: `${Math.min(m.value ?? 0, 100)}%`, 
+                backgroundColor: m.color || 'var(--accent-neon)',
+                boxShadow: `0 0 10px color-mix(in srgb, ${m.color || 'var(--accent-neon)'} 50%, transparent)`
+              }}
             />
           </div>
         </div>
@@ -161,6 +161,7 @@ function BarChart({ metrics }) {
 /* ── Main Component ─────────────────────────────────────────────── */
 export default function SystemMetrics({ pollingInterval = 3000 }) {
   const [data, setData] = useState(null);
+  const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
   const [chartType, setChartType] = useState('bar');
 
@@ -169,7 +170,15 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
     const poll = async () => {
       try {
         const metrics = await systemAPI.getMetrics();
-        if (active) { setData(metrics); setError(null); }
+        if (active) { 
+          setData(metrics);
+          setHistory(prev => {
+            const next = [...prev, metrics];
+            // keep last 20 samples
+            return next.length > 20 ? next.slice(next.length - 20) : next;
+          });
+          setError(null); 
+        }
       } catch (e) {
         if (active) setError(e.message);
       }
@@ -216,21 +225,21 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
     {
       label: 'CPU',
       value: cpuVal,
-      color: 'cyan',
+      color: 'var(--chart-cpu)',
       gradient: 'from-cyan-500 to-blue-500',
     },
     {
       label: 'Memory',
       value: data.memory.percent,
       sub: `${formatBytes(data.memory.used)} / ${formatBytes(data.memory.total)}`,
-      color: 'emerald',
+      color: 'var(--chart-mem)',
       gradient: 'from-emerald-500 to-teal-500',
     },
     {
       label: 'Disk' + (Array.isArray(data.disk) && data.disk.length > 1 ? ` (${mainDisk.mountpoint})` : ''),
       value: mainDisk.percent,
       sub: `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.total)}`,
-      color: 'violet',
+      color: 'var(--chart-disk)',
       gradient: 'from-violet-500 to-purple-500',
     },
   ];
@@ -260,15 +269,15 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
             }}
           >
             <option value="bar">Bar</option>
-            <option value="pie">Pie</option>
-            <option value="gauge">Gauge</option>
+            <option value="line">Line</option>
+            <option value="gauge">Gauge (Radar)</option>
           </select>
         </div>
       </div>
 
       {/* Render chosen chart */}
       {chartType === 'bar' && <BarChart metrics={metrics} />}
-      {chartType === 'pie' && <PieChart metrics={metrics} />}
+      {chartType === 'line' && <LineChart history={history} />}
       {chartType === 'gauge' && <GaugeChart metrics={metrics} />}
     </div>
   );

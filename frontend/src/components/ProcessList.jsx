@@ -4,8 +4,8 @@ import { processAPI } from '../services/api';
 function SortArrow({ active, direction }) {
   return (
     <span className="inline-flex flex-col ml-1 text-[9px] leading-[9px] align-middle">
-      <span className={active && direction === 'asc' ? 'text-cyan-400' : 'text-slate-600'}>▲</span>
-      <span className={active && direction === 'desc' ? 'text-cyan-400' : 'text-slate-600'}>▼</span>
+      <span style={{ color: active && direction === 'asc' ? 'var(--accent-neon)' : 'var(--text-muted)' }}>▲</span>
+      <span style={{ color: active && direction === 'desc' ? 'var(--accent-neon)' : 'var(--text-muted)' }}>▼</span>
     </span>
   );
 }
@@ -16,6 +16,7 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
   const [error, setError] = useState(null);
   const [sortKey, setSortKey] = useState('cpu_percent');
   const [sortDir, setSortDir] = useState('desc');
+  const [searchTerm, setSearchTerm] = useState('');
   const [processLimit, setProcessLimit] = useState(compact ? 15 : 50);
 
   useEffect(() => {
@@ -52,8 +53,17 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
     }
   };
 
+  const filtered = useMemo(() => {
+    if (!searchTerm) return processes;
+    const term = searchTerm.toLowerCase();
+    return processes.filter(p => 
+      String(p.pid).includes(term) || 
+      (p.name && p.name.toLowerCase().includes(term))
+    );
+  }, [processes, searchTerm]);
+
   const sorted = useMemo(() => {
-    const copy = [...processes];
+    const copy = [...filtered];
     copy.sort((a, b) => {
       let aVal = a[sortKey];
       let bVal = b[sortKey];
@@ -69,7 +79,7 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
       return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
     });
     return copy;
-  }, [processes, sortKey, sortDir]);
+  }, [filtered, sortKey, sortDir]);
 
   const handleKill = async (pid) => {
     if (!window.confirm(`Kill process ${pid}?`)) return;
@@ -103,6 +113,16 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
         </h2>
         
         <div className="flex items-center gap-3">
+          {/* Search Input */}
+          <input 
+            type="text" 
+            placeholder="Search PID/Name..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="text-xs rounded px-3 py-1.5 outline-none transition-colors border max-w-[140px]"
+            style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-card)' }}
+          />
+
           {!compact && (
             <div className="flex items-center gap-2">
               <span className="text-xs theme-muted">LIMIT:</span>
@@ -124,23 +144,23 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
             </div>
           )}
           <span className="text-xs theme-muted bg-slate-700/50 px-2 py-1 rounded">
-            {processes.length} shown
+            {filtered.length} shown
           </span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto rounded-lg border border-slate-700/40">
+      <div className="flex-1 overflow-auto rounded-lg border" style={{ borderColor: 'var(--border-card)' }}>
         {loading ? (
           <div className="p-8 text-center theme-muted animate-pulse">Loading…</div>
         ) : (
           <table className="w-full text-sm text-left">
-            <thead className="text-xs theme-muted uppercase bg-slate-900/60 sticky top-0">
+            <thead className="text-xs theme-muted uppercase sticky top-0 z-10 backdrop-blur-md shadow-sm" style={{ backgroundColor: 'var(--table-header-bg)' }}>
               <tr>
                 <th className="px-4 py-2.5">PID</th>
                 {sortableHeaders.filter(h => h.show).map(h => (
                   <th
                     key={h.key}
-                    className={`px-4 py-2.5 cursor-pointer select-none hover:text-cyan-400 transition-colors ${h.align === 'right' ? 'text-right' : ''}`}
+                    className={`px-4 py-2.5 cursor-pointer select-none transition-colors hover:text-[var(--accent-neon)] ${h.align === 'right' ? 'text-right' : ''}`}
                     onClick={() => handleSort(h.key)}
                   >
                     {h.label}
@@ -150,18 +170,24 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
                 {!compact && <th className="px-4 py-2.5 text-right">Action</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <tbody className="divide-y" style={{ borderColor: 'var(--border-card)' }}>
               {sorted.map((p) => (
-                <tr key={p.pid} className="hover:bg-slate-700/20 transition-colors group">
-                  <td className="px-4 py-2 font-mono text-xs theme-muted">{p.pid}</td>
-                  <td className="px-4 py-2 theme-text truncate max-w-[180px]" title={p.name}>
+                <tr key={p.pid} className="transition-colors group hover:bg-[var(--hover-row)]">
+                  <td className={`px-4 py-2 font-mono text-xs theme-muted transition-opacity duration-300 ${sortKey && sortKey !== 'pid' ? 'opacity-40 group-hover:opacity-80' : ''}`}>
+                    {p.pid}
+                  </td>
+                  <td className={`px-4 py-2 theme-text truncate max-w-[180px] transition-opacity duration-300 ${sortKey && sortKey !== 'name' ? 'opacity-40 group-hover:opacity-80' : ''}`} title={p.name}>
                     {p.name}
                   </td>
-                  {!compact && <td className="px-4 py-2 theme-muted">{p.username || '—'}</td>}
-                  <td className="px-4 py-2 text-right font-mono text-cyan-400">
+                  {!compact && (
+                    <td className={`px-4 py-2 theme-muted transition-opacity duration-300 ${sortKey && sortKey !== 'username' ? 'opacity-40 group-hover:opacity-80' : ''}`}>
+                      {p.username || '—'}
+                    </td>
+                  )}
+                  <td className={`px-4 py-2 text-right font-mono transition-opacity duration-300 ${sortKey && sortKey !== 'cpu_percent' ? 'opacity-40 group-hover:opacity-80' : ''}`} style={{ color: 'var(--accent-neon)' }}>
                     {(p.cpu_percent ?? 0).toFixed(1)}
                   </td>
-                  <td className="px-4 py-2 text-right font-mono text-emerald-400">
+                  <td className={`px-4 py-2 text-right font-mono transition-opacity duration-300 ${sortKey && sortKey !== 'memory_percent' ? 'opacity-40 group-hover:opacity-80' : ''}`} style={{ color: 'var(--accent-neon)' }}>
                     {(p.memory_percent ?? 0).toFixed(1)}
                   </td>
                   {!compact && (
