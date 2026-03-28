@@ -179,11 +179,13 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
                 {sortableHeaders.filter(h => h.show).map(h => (
                   <th
                     key={h.key}
-                    className={`px-4 py-2.5 cursor-pointer select-none transition-colors hover:text-[var(--accent-neon)] ${h.align === 'right' ? 'text-right' : ''}`}
+                    className="px-4 py-2.5 cursor-pointer select-none transition-colors hover:text-[var(--accent-neon)]"
                     onClick={() => handleSort(h.key)}
                   >
-                    {h.label}
-                    <SortArrow active={sortKey === h.key} direction={sortDir} />
+                    <div className={`flex items-center ${h.align === 'right' ? 'justify-end' : 'justify-start'}`}>
+                      <span>{h.label}</span>
+                      <SortArrow active={sortKey === h.key} direction={sortDir} />
+                    </div>
                   </th>
                 ))}
                 {!compact && <th className="px-4 py-2.5 text-right">Action</th>}

@@ -8,14 +8,45 @@ function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [pollingInterval, setPollingInterval] = useState(3000);
 
-  const toggleTheme = () => {
-    if (document.startViewTransition) {
-      document.startViewTransition(() => {
-        setDarkMode((d) => !d);
-      });
-    } else {
-      setDarkMode((d) => !d);
+  const toggleTheme = (e) => {
+    const isDark = !darkMode;
+
+    // Fallback if View Transitions API is not supported
+    if (!document.startViewTransition) {
+      setDarkMode(isDark);
+      return;
     }
+
+    // Get click coordinates for origin of the ripple
+    const x = e.clientX ?? window.innerWidth / 2;
+    const y = e.clientY ?? window.innerHeight / 2;
+
+    // Calculate maximum radius to cover the entire screen
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    const transition = document.startViewTransition(() => {
+      setDarkMode(isDark);
+    });
+
+    // Start clipping animation when pseudo-elements are ready
+    transition.ready.then(() => {
+      const clipPath = [
+        `circle(0px at ${x}px ${y}px)`,
+        `circle(${endRadius}px at ${x}px ${y}px)`,
+      ];
+
+      document.documentElement.animate(
+        { clipPath },
+        {
+          duration: 500,
+          easing: 'ease-in',
+          pseudoElement: '::view-transition-new(root)',
+        }
+      );
+    });
   };
 
   return (
