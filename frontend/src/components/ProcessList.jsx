@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { processAPI } from '../services/api';
+import { Minus, Maximize2, Minimize2 } from 'lucide-react';
 
 function SortArrow({ active, direction }) {
   return (
@@ -18,6 +19,8 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
   const [sortDir, setSortDir] = useState('desc');
   const [searchTerm, setSearchTerm] = useState('');
   const [processLimit, setProcessLimit] = useState(compact ? 15 : 50);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -105,9 +108,25 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
     { key: 'memory_percent', label: 'Mem %', align: 'right', show: true },
   ];
 
+  const containerClass = isMaximized 
+    ? "fixed inset-4 z-[100] rounded-xl theme-card p-6 flex flex-col backdrop-blur-3xl shadow-2xl transition-all"
+    : `rounded-xl theme-card p-6 flex flex-col relative transition-all ${isMinimized ? 'h-fit' : 'h-full'}`;
+
   return (
-    <div className="rounded-xl theme-card p-6 h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4 gap-4 flex-wrap md:flex-nowrap">
+    <div className={containerClass} style={!isMaximized && !isMinimized ? { resize: 'both', overflow: 'hidden', minHeight: '300px' } : undefined}>
+      {/* Window Controls */}
+      <div className="absolute top-4 right-4 flex gap-1 z-50">
+        <button onClick={() => { setIsMinimized(!isMinimized); setIsMaximized(false); }} className="p-1 hover:bg-slate-500/20 rounded text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]" title={isMinimized ? "Restore" : "Minimize"}>
+          <Minus size={14} />
+        </button>
+        {!isMinimized && (
+          <button onClick={() => setIsMaximized(!isMaximized)} className="p-1 hover:bg-slate-500/20 rounded text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]" title={isMaximized ? "Restore down" : "Maximize"}>
+            {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        )}
+      </div>
+
+      <div className={`flex justify-between items-center mb-4 gap-4 flex-wrap md:flex-nowrap pr-16 ${isMinimized ? '!mb-0' : ''}`}>
         <h2 className="text-sm font-semibold theme-muted uppercase tracking-wider shrink-0">
           {compact ? 'Top Processes' : 'All Processes'}
         </h2>
@@ -149,12 +168,12 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto rounded-lg border" style={{ borderColor: 'var(--border-card)' }}>
+      <div className={isMinimized ? 'hidden' : 'flex-1 overflow-auto rounded-lg border flex flex-col min-h-0 w-full'} style={{ borderColor: 'var(--border-card)' }}>
         {loading ? (
           <div className="p-8 text-center theme-muted animate-pulse">Loading…</div>
         ) : (
           <table className="w-full text-sm text-left">
-            <thead className="text-xs theme-muted uppercase sticky top-0 z-10 backdrop-blur-md shadow-sm" style={{ backgroundColor: 'var(--table-header-bg)' }}>
+            <thead className="text-xs theme-secondary font-bold uppercase sticky top-0 z-10 backdrop-blur-md shadow-sm" style={{ backgroundColor: 'var(--table-header-bg)' }}>
               <tr>
                 <th className="px-4 py-2.5">PID</th>
                 {sortableHeaders.filter(h => h.show).map(h => (
@@ -173,14 +192,14 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
             <tbody className="divide-y" style={{ borderColor: 'var(--border-card)' }}>
               {sorted.map((p) => (
                 <tr key={p.pid} className="transition-colors group hover:bg-[var(--hover-row)]">
-                  <td className={`px-4 py-2 font-mono text-xs theme-muted transition-opacity duration-300 ${sortKey && sortKey !== 'pid' ? 'opacity-40 group-hover:opacity-80' : ''}`}>
+                  <td className={`px-4 py-2 font-mono text-xs theme-text font-bold transition-opacity duration-300 ${sortKey && sortKey !== 'pid' ? 'opacity-40 group-hover:opacity-80' : ''}`}>
                     {p.pid}
                   </td>
-                  <td className={`px-4 py-2 theme-text truncate max-w-[180px] transition-opacity duration-300 ${sortKey && sortKey !== 'name' ? 'opacity-40 group-hover:opacity-80' : ''}`} title={p.name}>
+                  <td className={`px-4 py-2 theme-text font-semibold truncate max-w-[180px] transition-opacity duration-300 ${sortKey && sortKey !== 'name' ? 'opacity-40 group-hover:opacity-80' : ''}`} title={p.name}>
                     {p.name}
                   </td>
                   {!compact && (
-                    <td className={`px-4 py-2 theme-muted transition-opacity duration-300 ${sortKey && sortKey !== 'username' ? 'opacity-40 group-hover:opacity-80' : ''}`}>
+                    <td className={`px-4 py-2 theme-secondary transition-opacity duration-300 ${sortKey && sortKey !== 'username' ? 'opacity-40 group-hover:opacity-80' : ''}`}>
                       {p.username || '—'}
                     </td>
                   )}

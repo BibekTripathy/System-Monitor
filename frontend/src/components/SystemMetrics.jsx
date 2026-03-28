@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { systemAPI } from '../services/api';
+import { Minus, Maximize2, Minimize2 } from 'lucide-react';
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
@@ -22,7 +23,7 @@ function formatUptime(seconds) {
 }
 
 /* ── Line Chart ──────────────────────────────────────── */
-function LineChart({ history }) {
+function LineChart({ history, isMaximized }) {
   if (!history || history.length < 2) {
     return <div className="text-center text-xs theme-muted my-16">Collecting historical data...</div>;
   }
@@ -48,21 +49,36 @@ function LineChart({ history }) {
   };
 
   return (
-    <div className="flex flex-col items-center w-full mt-4">
-      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible" preserveAspectRatio="none">
-        {/* Grid lines */}
-        <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="var(--border-card)" strokeDasharray="4 4" />
-        <line x1="0" y1={0} x2={width} y2={0} stroke="var(--border-card)" strokeDasharray="4 4" />
-        <line x1="0" y1={height} x2={width} y2={height} stroke="var(--border-card)" />
+    <div className={`flex flex-col w-full mt-4 transition-all duration-300 ${isMaximized ? 'h-full flex-1 justify-center' : 'items-center'}`}>
+      <div className="relative w-full transition-all duration-300" style={{ height: isMaximized ? 'min(60vh, 600px)' : height, minHeight: height }}>
+        {/* Y-axis Labels */}
+        {[0, 25, 50, 75, 100].map(val => (
+          <div key={val} className="absolute left-0 w-8 text-right text-[10px] text-[var(--text-secondary)] pr-2" 
+               style={{ top: `${100 - val}%`, transform: 'translateY(-50%)' }}>
+            {val}
+          </div>
+        ))}
         
-        {/* Lines */}
-        <path d={generatePath(pointsCpu)} fill="none" stroke="var(--chart-cpu)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
-        <path d={generatePath(pointsMem)} fill="none" stroke="var(--chart-mem)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
-        <path d={generatePath(pointsDisk)} fill="none" stroke="var(--chart-disk)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
-      </svg>
+        {/* Chart SVG wrapper with left margin for labels */}
+        <div className="absolute left-8 right-0 top-0 bottom-0">
+          <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="overflow-visible" preserveAspectRatio="none">
+            {/* Grid lines */}
+            <line x1="0" y1={0} x2={width} y2={0} stroke="var(--border-card)" strokeDasharray="4 4" opacity="0.5" />
+            <line x1="0" y1={height * 0.25} x2={width} y2={height * 0.25} stroke="var(--border-card)" strokeDasharray="4 4" opacity="0.5" />
+            <line x1="0" y1={height * 0.5} x2={width} y2={height * 0.5} stroke="var(--border-card)" strokeDasharray="4 4" opacity="0.5" />
+            <line x1="0" y1={height * 0.75} x2={width} y2={height * 0.75} stroke="var(--border-card)" strokeDasharray="4 4" opacity="0.5" />
+            <line x1="0" y1={height} x2={width} y2={height} stroke="var(--border-card)" />
+            
+            {/* Lines */}
+            <path d={generatePath(pointsCpu)} fill="none" stroke="var(--chart-cpu)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
+            <path d={generatePath(pointsMem)} fill="none" stroke="var(--chart-mem)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
+            <path d={generatePath(pointsDisk)} fill="none" stroke="var(--chart-disk)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
+          </svg>
+        </div>
+      </div>
       
       {/* Legend */}
-      <div className="flex gap-4 mt-8 text-xs drop-shadow-md">
+      <div className={`flex gap-4 text-xs drop-shadow-md transition-all duration-300 ${isMaximized ? 'mt-12 justify-center text-sm' : 'mt-8'}`}>
          <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-cpu)', color: 'var(--chart-cpu)' }} /> <span style={{ color: 'var(--text-secondary)' }}>CPU</span></div>
          <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-mem)', color: 'var(--chart-mem)' }} /> <span style={{ color: 'var(--text-secondary)' }}>Memory</span></div>
          <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-disk)', color: 'var(--chart-disk)' }} /> <span style={{ color: 'var(--text-secondary)' }}>Disk</span></div>
@@ -72,11 +88,13 @@ function LineChart({ history }) {
 }
 
 /* ── SVG Gauge Chart (Radar-style) ────────────────────────────────────────────── */
-function GaugeChart({ metrics }) {
+function GaugeChart({ metrics, isMaximized }) {
+  const sizeClass = isMaximized ? "w-80 h-80 sm:w-96 sm:h-96" : "w-48 h-48";
+  
   return (
-    <div className="flex flex-col items-center justify-center relative mt-4">
+    <div className={`flex flex-col items-center justify-center relative mt-4 transition-all duration-300 ${isMaximized ? 'h-full flex-1' : ''}`}>
       {/* Radar screen container */}
-      <div className="relative w-48 h-48 rounded-full overflow-hidden" 
+      <div className={`relative rounded-full overflow-hidden transition-all duration-300 ${sizeClass}`} 
            style={{ backgroundColor: 'var(--bg-tertiary)', border: '2px solid var(--border-card)', boxShadow: '0 0 25px color-mix(in srgb, var(--accent-neon) 20%, transparent)' }}>
         
         {/* Radar grid markings */}
@@ -128,21 +146,21 @@ function GaugeChart({ metrics }) {
 }
 
 /* ── Bar Chart (original styled) ───────────────────────────────────────── */
-function BarChart({ metrics }) {
+function BarChart({ metrics, isMaximized }) {
   return (
-    <div className="space-y-6 mt-4">
+    <div className={`space-y-6 mt-4 transition-all duration-300 ${isMaximized ? 'flex flex-col justify-around h-full flex-1 py-10' : ''}`}>
       {metrics.map((m) => (
         <div key={m.label}>
-          <div className="flex justify-between items-end mb-2">
+          <div className={`flex justify-between items-end mb-2 ${isMaximized ? 'mb-4' : ''}`}>
             <div>
               <span className="text-sm font-bold uppercase tracking-wider" style={{ color: m.color || 'var(--text-primary)' }}>{m.label}</span>
               {m.sub && <span className="text-xs ml-2 opacity-80" style={{ color: 'var(--text-muted)' }}>{m.sub}</span>}
             </div>
-            <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+            <span className={`tabular-nums transition-all ${isMaximized ? 'text-2xl font-medium' : 'text-lg font-bold'}`} style={{ color: 'var(--text-primary)' }}>
               {(m.value ?? 0).toFixed(1)}%
             </span>
           </div>
-          <div className="h-2.5 w-full rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border" style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-card)' }}>
+          <div className={`${isMaximized ? 'h-6' : 'h-2.5'} transition-all duration-300 w-full rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border`} style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-card)' }}>
             <div
               className="h-full rounded-full transition-all duration-700 ease-out"
               style={{ 
@@ -164,6 +182,8 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
   const [chartType, setChartType] = useState('bar');
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -244,42 +264,67 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
     },
   ];
 
+  const containerClass = isMaximized 
+    ? "fixed inset-4 z-[100] rounded-xl theme-card p-6 flex flex-col backdrop-blur-3xl shadow-2xl transition-all"
+    : `rounded-xl theme-card p-6 flex flex-col relative transition-all ${isMinimized ? 'h-fit' : 'h-full'}`;
+
   return (
-    <div className="rounded-xl theme-card p-6">
-      <div className="flex flex-col gap-3 mb-5 w-full">
+    <div className={containerClass} style={!isMaximized && !isMinimized ? { resize: 'both', overflow: 'hidden', minHeight: '320px' } : undefined}>
+      {/* Window Controls */}
+      <div className="absolute top-4 right-4 flex gap-1 z-50">
+        <button onClick={() => { setIsMinimized(!isMinimized); setIsMaximized(false); }} className="p-1 hover:bg-slate-500/20 rounded text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]" title={isMinimized ? "Restore" : "Minimize"}>
+          <Minus size={14} />
+        </button>
+        {!isMinimized && (
+          <button onClick={() => setIsMaximized(!isMaximized)} className="p-1 hover:bg-slate-500/20 rounded text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]" title={isMaximized ? "Restore down" : "Maximize"}>
+            {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        )}
+      </div>
+
+      <div className={`flex flex-col gap-3 mb-5 w-full pr-16 ${isMinimized ? '!mb-0' : ''}`}>
         <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           System Resources
         </h2>
         <div className="flex items-center gap-3 w-full justify-between sm:justify-start">
           {data.uptime && (
-            <div className="text-[10px] font-mono px-2 py-1 rounded border flex flex-col items-start justify-center min-w-[100px]"
+            <div className="text-[10px] font-mono rounded border flex flex-col items-start justify-center w-28 h-10 px-3"
                   style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-card)' }}>
               <span className="opacity-70 text-[8px] leading-none mb-1 tracking-widest font-sans">UPTIME</span>
               <span className="leading-none text-xs">{formatUptime(data.uptime)}</span>
             </div>
           )}
-          {/* Chart Type Dropdown */}
-          <select
-            value={chartType}
-            onChange={(e) => setChartType(e.target.value)}
-            className="text-xs rounded px-2 py-1 border cursor-pointer outline-none transition-colors min-w-[100px]"
-            style={{
-              backgroundColor: 'var(--bg-primary)',
-              color: 'var(--text-secondary)',
-              borderColor: 'var(--border-card)',
-            }}
-          >
-            <option value="bar">Bar</option>
-            <option value="line">Line</option>
-            <option value="gauge">Gauge (Radar)</option>
-          </select>
+          {/* Chart Type Dropdown with custom arrow */}
+          <div className="relative w-28 h-10">
+            <select
+              value={chartType}
+              onChange={(e) => setChartType(e.target.value)}
+              className="appearance-none text-xs rounded border cursor-pointer outline-none transition-colors w-full h-full px-3 pr-8"
+              style={{
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-secondary)',
+                borderColor: 'var(--border-card)',
+              }}
+            >
+              <option value="bar">Bar</option>
+              <option value="line">Line</option>
+              <option value="gauge">Gauge</option>
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" style={{ color: 'var(--text-secondary)' }}>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Render chosen chart */}
-      {chartType === 'bar' && <BarChart metrics={metrics} />}
-      {chartType === 'line' && <LineChart history={history} />}
-      {chartType === 'gauge' && <GaugeChart metrics={metrics} />}
+      <div className={isMinimized ? 'hidden' : 'flex-1 overflow-auto flex flex-col min-h-0 w-full'}>
+        {/* Render chosen chart */}
+        {chartType === 'bar' && <BarChart metrics={metrics} isMaximized={isMaximized} />}
+        {chartType === 'line' && <LineChart history={history} isMaximized={isMaximized} />}
+        {chartType === 'gauge' && <GaugeChart metrics={metrics} isMaximized={isMaximized} />}
+      </div>
     </div>
   );
 }

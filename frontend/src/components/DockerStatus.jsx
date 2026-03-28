@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { dockerAPI } from '../services/api';
+import { Minus, Maximize2, Minimize2 } from 'lucide-react';
 
 export default function DockerStatus({ pollingInterval = 5000 }) {
   const [containers, setContainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [logs, setLogs] = useState({ id: null, text: '' });
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const fetchContainers = async () => {
     try {
@@ -60,9 +63,25 @@ export default function DockerStatus({ pollingInterval = 5000 }) {
     );
   }
 
+  const containerClass = isMaximized 
+    ? "fixed inset-4 z-[100] rounded-xl theme-card p-6 flex flex-col backdrop-blur-3xl shadow-2xl transition-all"
+    : `rounded-xl theme-card p-6 flex flex-col relative transition-all ${isMinimized ? 'h-fit' : 'h-full'}`;
+
   return (
-    <div className="rounded-xl theme-card p-6">
-      <div className="flex justify-between items-center mb-5">
+    <div className={containerClass} style={!isMaximized && !isMinimized ? { resize: 'both', overflow: 'hidden', minHeight: '200px' } : undefined}>
+      {/* Window Controls */}
+      <div className="absolute top-4 right-4 flex gap-1 z-50">
+        <button onClick={() => { setIsMinimized(!isMinimized); setIsMaximized(false); }} className="p-1 hover:bg-slate-500/20 rounded text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]" title={isMinimized ? "Restore" : "Minimize"}>
+          <Minus size={14} />
+        </button>
+        {!isMinimized && (
+          <button onClick={() => setIsMaximized(!isMaximized)} className="p-1 hover:bg-slate-500/20 rounded text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]" title={isMaximized ? "Restore down" : "Maximize"}>
+            {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        )}
+      </div>
+
+      <div className={`flex justify-between items-center mb-5 pr-16 w-full ${isMinimized ? '!mb-0' : ''}`}>
         <h2 className="text-sm font-semibold theme-muted uppercase tracking-wider">
           Docker Containers
         </h2>
@@ -71,14 +90,16 @@ export default function DockerStatus({ pollingInterval = 5000 }) {
         </span>
       </div>
 
-      {loading ? (
-        <div className="theme-muted animate-pulse p-4 text-center">Loading…</div>
-      ) : containers.length === 0 ? (
-        <div className="theme-muted text-sm text-center py-8">
-          No Docker containers found. Is Docker running?
-        </div>
-      ) : (
-        <div className="space-y-3">
+      {!isMinimized && (
+        <div className="flex-1 overflow-auto min-h-0 w-full">
+          {loading ? (
+            <div className="theme-muted animate-pulse p-4 text-center">Loading…</div>
+          ) : containers.length === 0 ? (
+            <div className="theme-muted text-sm text-center py-8">
+              No Docker containers found. Is Docker running?
+            </div>
+          ) : (
+            <div className="space-y-3 pb-2">
           {containers.map((c) => {
             const running = c.state?.Running;
             return (
@@ -143,6 +164,8 @@ export default function DockerStatus({ pollingInterval = 5000 }) {
               </div>
             );
           })}
+        </div>
+        )}
         </div>
       )}
     </div>
