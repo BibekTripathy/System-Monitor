@@ -246,22 +246,23 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
 
   return (
     <div className="rounded-xl theme-card p-6">
-      <div className="flex justify-between items-center mb-5">
+      <div className="flex flex-col gap-3 mb-5 w-full">
         <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           System Resources
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 w-full justify-between sm:justify-start">
           {data.uptime && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded border"
+            <div className="text-[10px] font-mono px-2 py-1 rounded border flex flex-col items-start justify-center min-w-[100px]"
                   style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-card)' }}>
-              UPTIME: {formatUptime(data.uptime)}
-            </span>
+              <span className="opacity-70 text-[8px] leading-none mb-1 tracking-widest font-sans">UPTIME</span>
+              <span className="leading-none text-xs">{formatUptime(data.uptime)}</span>
+            </div>
           )}
           {/* Chart Type Dropdown */}
           <select
             value={chartType}
             onChange={(e) => setChartType(e.target.value)}
-            className="text-xs rounded px-2 py-1 border cursor-pointer outline-none transition-colors"
+            className="text-xs rounded px-2 py-1 border cursor-pointer outline-none transition-colors min-w-[100px]"
             style={{
               backgroundColor: 'var(--bg-primary)',
               color: 'var(--text-secondary)',

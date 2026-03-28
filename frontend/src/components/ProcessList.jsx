@@ -107,19 +107,19 @@ export default function ProcessList({ compact = false, pollingInterval = 5000 })
 
   return (
     <div className="rounded-xl theme-card p-6 h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-sm font-semibold theme-muted uppercase tracking-wider">
+      <div className="flex justify-between items-center mb-4 gap-4 flex-wrap md:flex-nowrap">
+        <h2 className="text-sm font-semibold theme-muted uppercase tracking-wider shrink-0">
           {compact ? 'Top Processes' : 'All Processes'}
         </h2>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1 justify-end flex-wrap sm:flex-nowrap">
           {/* Search Input */}
           <input 
             type="text" 
             placeholder="Search PID/Name..." 
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)} 
-            className="text-xs rounded px-3 py-1.5 outline-none transition-colors border max-w-[140px]"
+            className="text-xs rounded px-3 py-1.5 outline-none transition-colors border w-full min-w-[140px] sm:max-w-[250px] md:max-w-[350px] flex-1"
             style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-card)' }}
           />
 
