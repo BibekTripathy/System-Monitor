@@ -55,4 +55,13 @@ class DockerService:
         except Exception as e:
             return f"Error fetching logs: {str(e)}"
 
+    def close(self):
+        """Close the Docker client connection pool."""
+        if self.client:
+            try:
+                self.client.close()
+            except Exception:
+                pass
+            self.client = None
+
 docker_service = DockerService()
