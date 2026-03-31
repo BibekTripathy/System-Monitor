@@ -85,6 +85,27 @@ If you prefer to run the backend manually, follow these steps:
 
 The API will be available at `http://127.0.0.1:5000`
 
+## Packaging & Distribution
+
+This application is configured for automated CI/CD packaging using GitHub Actions. Upon pushing code, the workflow builds:
+
+1. **Docker Image (GitHub Container Registry)**
+   The application is packaged as a single Docker container containing both the React frontend and Flask backend.
+   ```bash
+   docker pull ghcr.io/<your-username>/system-monitor:latest
+   docker run -p 5000:5000 ghcr.io/<your-username>/system-monitor:latest
+   ```
+   > **Note:** Running a system monitor in Docker means it will monitor the container's isolated resources. Add appropriate flags (e.g., `--pid=host`, volume mounting `/var/run/docker.sock`, etc.) to monitor the host.
+
+2. **Native Executables (GitHub Releases)**
+   For pure native host monitoring, the application is also compiled into a single executable binary using PyInstaller.
+   Check the **Releases** tab on GitHub to download the `.exe` (Windows) or binary (Linux/macOS) for your specific platform. Double-click it or run it from the terminal to instantly launch the fully integrated frontend/backend application.
+
+You can also package it yourself locally using the included script:
+```bash
+python build_exe.py
+```
+
 ## API Endpoints
 
 ### Metrics
