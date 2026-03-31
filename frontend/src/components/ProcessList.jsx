@@ -3,10 +3,15 @@ import { processAPI } from '../services/api';
 import { Minus, Maximize2, Minimize2 } from 'lucide-react';
 
 function SortArrow({ active, direction }) {
+  const getArrowColor = (arrowDirection) => {
+    if (!active) return 'var(--text-muted)';
+    return direction === arrowDirection ? 'var(--accent-neon)' : 'var(--sort-arrow-inactive)';
+  };
+
   return (
     <span className="inline-flex flex-col ml-1 text-[9px] leading-[9px] align-middle">
-      <span style={{ color: active && direction === 'asc' ? 'var(--accent-neon)' : 'var(--text-muted)' }}>▲</span>
-      <span style={{ color: active && direction === 'desc' ? 'var(--accent-neon)' : 'var(--text-muted)' }}>▼</span>
+      <span style={{ color: getArrowColor('asc') }}>▲</span>
+      <span style={{ color: getArrowColor('desc') }}>▼</span>
     </span>
   );
 }
