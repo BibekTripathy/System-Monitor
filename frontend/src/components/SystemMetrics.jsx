@@ -350,7 +350,7 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
       value: networkPercent,
       sub: `${formatBytes(networkRateBps)}/s`,
       color: 'var(--chart-network)',
-      gradient: 'from-sky-500 to-cyan-500',
+      gradient: 'from-fuchsia-400 to-purple-500',
     },
   ];
 
