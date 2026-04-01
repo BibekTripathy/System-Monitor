@@ -425,27 +425,26 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
         {chartType === 'bar' && <BarChart metrics={metrics} isMaximized={isMaximized} showCores={showCores} coreUsage={coreUsage} />}
         {chartType === 'line' && <LineChart history={history} isMaximized={isMaximized} showCores={showCores} pollingInterval={pollingInterval} />}
         {chartType === 'gauge' && <GaugeChart metrics={metrics} isMaximized={isMaximized} />}
-      </div>
 
-
-      <div className="mb-4 p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)]">
-        <div className="text-xs text-[var(--text-muted)] mb-2">Network Traffic</div>
-        <div className="grid grid-cols-2 gap-4 text-xs">
-          <div>
-            <div className="text-[var(--text-secondary)]">Sent</div>
-            <div className="font-semibold">{formatBytes(mainNetwork.bytes_sent)}</div>
-          </div>
-          <div>
-            <div className="text-[var(--text-secondary)]">Received</div>
-            <div className="font-semibold">{formatBytes(mainNetwork.bytes_recv)}</div>
-          </div>
-          <div>
-            <div className="text-[var(--text-secondary)]">Packets Sent</div>
-            <div className="font-semibold">{mainNetwork.packets_sent}</div>
-          </div>
-          <div>
-            <div className="text-[var(--text-secondary)]">Packets Recv</div>
-            <div className="font-semibold">{mainNetwork.packets_recv}</div>
+        <div className="mt-8 mb-4 p-3 shrink-0 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)]">
+          <div className="text-xs text-[var(--text-muted)] mb-2">Network Traffic</div>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <div className="text-[var(--text-secondary)]">Sent</div>
+              <div className="font-semibold">{formatBytes(mainNetwork.bytes_sent)}</div>
+            </div>
+            <div>
+              <div className="text-[var(--text-secondary)]">Received</div>
+              <div className="font-semibold">{formatBytes(mainNetwork.bytes_recv)}</div>
+            </div>
+            <div>
+              <div className="text-[var(--text-secondary)]">Packets Sent</div>
+              <div className="font-semibold">{mainNetwork.packets_sent}</div>
+            </div>
+            <div>
+              <div className="text-[var(--text-secondary)]">Packets Recv</div>
+              <div className="font-semibold">{mainNetwork.packets_recv}</div>
+            </div>
           </div>
         </div>
       </div>
