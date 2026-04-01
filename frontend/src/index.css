@@ -33,6 +33,7 @@
   --chart-cpu: #00f0ff;
   --chart-mem: #3b82f6; /* Medium Blue */
   --chart-disk: #8b5cf6;
+  --chart-network: #22d3ee;
 
   /* Grid Pattern Edge Padding */
   --pattern-inset: 24px;
@@ -66,6 +67,7 @@
   --chart-cpu: #0284c7;
   --chart-mem: #2563eb; /* Medium Blue slightly darker for contrast */
   --chart-disk: #7c3aed;
+  --chart-network: #0ea5e9;
 
   --pattern-inset: 0px; /* No inset padding for light mode */
 }

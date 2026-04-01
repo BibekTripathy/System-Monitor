@@ -22,8 +22,12 @@ function formatUptime(seconds) {
   return `${h}h ${m}m ${s}s`;
 }
 
+function formatPercent(value) {
+  return `${(value ?? 0).toFixed(1)}%`;
+}
+
 /* ── Line Chart ──────────────────────────────────────── */
-function LineChart({ history, isMaximized }) {
+function LineChart({ history, isMaximized, showCores, pollingInterval }) {
   if (!history || history.length < 2) {
     return <div className="text-center text-xs theme-muted my-16">Collecting historical data...</div>;
   }
@@ -37,6 +41,25 @@ function LineChart({ history, isMaximized }) {
   const pointsCpu = history.map(h => typeof h.cpu === 'object' ? h.cpu.total : h.cpu);
   const pointsMem = history.map(h => h.memory.percent);
   const pointsDisk = history.map(h => Array.isArray(h.disk) ? h.disk[0].percent : h.disk.percent);
+
+  const effectiveInterval = (pollingInterval || 3000) / 1000;
+  const LINK_BPS = 125_000_000; // 1 Gbps link in B/s
+
+  const pointsNetwork = history.map((h, idx) => {
+    if (idx === 0) return 0;
+    const prev = history[idx - 1].network || { bytes_sent: 0, bytes_recv: 0 };
+    const curr = h.network || { bytes_sent: 0, bytes_recv: 0 };
+    const deltaBytes = Math.max(0, (curr.bytes_sent - prev.bytes_sent) + (curr.bytes_recv - prev.bytes_recv));
+    const bps = deltaBytes / effectiveInterval;
+    return Math.min(100, (bps / LINK_BPS) * 100);
+  });
+
+  const coreHistoryAvailable = showCores && history[0]?.cpu?.per_core && Array.isArray(history[0].cpu.per_core);
+  const coreColors = ['#34d399', '#60a5fa', '#f97316', '#f43f5e', '#a855f7', '#facc15', '#06b6d4', '#f472b6'];
+
+  const coreSeries = coreHistoryAvailable
+    ? history[0].cpu.per_core.map((_, coreIndex) => history.map(h => (h.cpu?.per_core?.[coreIndex]) ?? 0))
+    : [];
   
   const generatePath = (points) => {
     return points.map((p, i) => {
@@ -73,6 +96,20 @@ function LineChart({ history, isMaximized }) {
             <path d={generatePath(pointsCpu)} fill="none" stroke="var(--chart-cpu)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
             <path d={generatePath(pointsMem)} fill="none" stroke="var(--chart-mem)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
             <path d={generatePath(pointsDisk)} fill="none" stroke="var(--chart-disk)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
+            <path d={generatePath(pointsNetwork)} fill="none" stroke="var(--chart-network)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-700 ease-linear" />
+            {coreSeries.map((series, idx) => (
+              <path
+                key={`core-${idx}`}
+                d={generatePath(series)}
+                fill="none"
+                stroke={coreColors[idx % coreColors.length]}
+                strokeWidth="1.2"
+                opacity="0.5"
+                vectorEffect="non-scaling-stroke"
+                strokeLinecap="round"
+                className="transition-all duration-700 ease-linear"
+              />
+            ))}
           </svg>
         </div>
       </div>
@@ -82,6 +119,8 @@ function LineChart({ history, isMaximized }) {
          <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-cpu)', color: 'var(--chart-cpu)' }} /> <span style={{ color: 'var(--text-secondary)' }}>CPU</span></div>
          <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-mem)', color: 'var(--chart-mem)' }} /> <span style={{ color: 'var(--text-secondary)' }}>Memory</span></div>
          <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-disk)', color: 'var(--chart-disk)' }} /> <span style={{ color: 'var(--text-secondary)' }}>Disk</span></div>
+         <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]" style={{ backgroundColor: 'var(--chart-network)', color: 'var(--chart-network)' }} /> <span style={{ color: 'var(--text-secondary)' }}>Network</span></div>
+         {coreHistoryAvailable && <div className="flex items-center gap-1"><span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Core details shown</span></div>}
       </div>
     </div>
   );
@@ -146,14 +185,23 @@ function GaugeChart({ metrics, isMaximized }) {
 }
 
 /* ── Bar Chart (original styled) ───────────────────────────────────────── */
-function BarChart({ metrics, isMaximized }) {
+function BarChart({ metrics, isMaximized, showCores, coreUsage }) {
   return (
     <div className={`space-y-6 mt-4 transition-all duration-300 ${isMaximized ? 'flex flex-col justify-around h-full flex-1 py-10' : ''}`}>
-      {metrics.map((m) => (
+      {metrics.map((m, idx) => (
         <div key={m.label}>
           <div className={`flex justify-between items-end mb-2 ${isMaximized ? 'mb-4' : ''}`}>
             <div>
               <span className="text-sm font-bold uppercase tracking-wider" style={{ color: m.color || 'var(--text-primary)' }}>{m.label}</span>
+              {m.label === 'Network' && (
+                <span
+                  className="ml-1 text-xs font-medium cursor-help" 
+                  title="Network % = (bytes sent+recv per second) / 1Gbps × 100"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  ⓘ
+                </span>
+              )}
               {m.sub && <span className="text-xs ml-2 opacity-80" style={{ color: 'var(--text-muted)' }}>{m.sub}</span>}
             </div>
             <span className={`tabular-nums transition-all ${isMaximized ? 'text-2xl font-medium' : 'text-lg font-bold'}`} style={{ color: 'var(--text-primary)' }}>
@@ -170,6 +218,25 @@ function BarChart({ metrics, isMaximized }) {
               }}
             />
           </div>
+
+          {showCores && m.label === 'CPU' && Array.isArray(coreUsage) && (
+            <div className="mt-3 p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)]">
+              <div className="text-xs text-[var(--text-muted)] mb-2">Per-core CPU Usage</div>
+              <div className="grid grid-cols-2 gap-2">
+                {coreUsage.map((value, coreIdx) => (
+                  <div key={`bar-core-${coreIdx}`} className="text-xs">
+                    <div className="flex justify-between mb-1">
+                      <span>Core {coreIdx}</span>
+                      <span className="font-semibold">{formatPercent(value)}</span>
+                    </div>
+                    <div className="h-2 rounded bg-[var(--bg-primary)] overflow-hidden">
+                      <div className="h-full rounded" style={{ width: `${Math.min(value, 100)}%`, backgroundColor: 'var(--chart-cpu)' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -182,6 +249,7 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
   const [chartType, setChartType] = useState('bar');
+  const [showCores, setShowCores] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
@@ -240,6 +308,21 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
   // Handle new backend data shape
   const cpuVal = typeof data.cpu === 'object' ? data.cpu.total : data.cpu;
   const mainDisk = Array.isArray(data.disk) ? data.disk[0] : data.disk;
+  const mainNetwork = data.network || { bytes_sent: 0, bytes_recv: 0, packets_sent: 0, packets_recv: 0 };
+  const hasCoreData = Array.isArray(data.cpu?.per_core);
+  const coreUsage = hasCoreData ? data.cpu.per_core : [];
+
+  const calculateNetworkRate = () => {
+    if (history.length < 2) return 0;
+    const prev = history[history.length - 2].network || { bytes_sent: 0, bytes_recv: 0 };
+    const curr = history[history.length - 1].network || { bytes_sent: 0, bytes_recv: 0 };
+    const deltaBytes = Math.max(0, (curr.bytes_sent - prev.bytes_sent) + (curr.bytes_recv - prev.bytes_recv));
+    const seconds = (pollingInterval || 3000) / 1000;
+    return deltaBytes / seconds;
+  };
+
+  const networkRateBps = calculateNetworkRate();
+  const networkPercent = Math.min(100, (networkRateBps / 125_000_000) * 100);
 
   const metrics = [
     {
@@ -261,6 +344,13 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
       sub: `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.total)}`,
       color: 'var(--chart-disk)',
       gradient: 'from-violet-500 to-purple-500',
+    },
+    {
+      label: 'Network',
+      value: networkPercent,
+      sub: `${formatBytes(networkRateBps)}/s`,
+      color: 'var(--chart-network)',
+      gradient: 'from-sky-500 to-cyan-500',
     },
   ];
 
@@ -316,14 +406,48 @@ export default function SystemMetrics({ pollingInterval = 3000 }) {
               </svg>
             </div>
           </div>
+          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={showCores}
+                onChange={(e) => setShowCores(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Show per-core
+            </label>
+          </div>
         </div>
       </div>
 
       <div className={isMinimized ? 'hidden' : 'flex-1 overflow-auto flex flex-col min-h-0 w-full'}>
         {/* Render chosen chart */}
-        {chartType === 'bar' && <BarChart metrics={metrics} isMaximized={isMaximized} />}
-        {chartType === 'line' && <LineChart history={history} isMaximized={isMaximized} />}
+        {chartType === 'bar' && <BarChart metrics={metrics} isMaximized={isMaximized} showCores={showCores} coreUsage={coreUsage} />}
+        {chartType === 'line' && <LineChart history={history} isMaximized={isMaximized} showCores={showCores} pollingInterval={pollingInterval} />}
         {chartType === 'gauge' && <GaugeChart metrics={metrics} isMaximized={isMaximized} />}
+      </div>
+
+
+      <div className="mb-4 p-3 rounded-lg border border-[var(--border-card)] bg-[var(--bg-secondary)]">
+        <div className="text-xs text-[var(--text-muted)] mb-2">Network Traffic</div>
+        <div className="grid grid-cols-2 gap-4 text-xs">
+          <div>
+            <div className="text-[var(--text-secondary)]">Sent</div>
+            <div className="font-semibold">{formatBytes(mainNetwork.bytes_sent)}</div>
+          </div>
+          <div>
+            <div className="text-[var(--text-secondary)]">Received</div>
+            <div className="font-semibold">{formatBytes(mainNetwork.bytes_recv)}</div>
+          </div>
+          <div>
+            <div className="text-[var(--text-secondary)]">Packets Sent</div>
+            <div className="font-semibold">{mainNetwork.packets_sent}</div>
+          </div>
+          <div>
+            <div className="text-[var(--text-secondary)]">Packets Recv</div>
+            <div className="font-semibold">{mainNetwork.packets_recv}</div>
+          </div>
+        </div>
       </div>
     </div>
   );

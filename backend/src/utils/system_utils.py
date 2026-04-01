@@ -35,5 +35,18 @@ def get_disk_info():
 
     return disk_data
 
+def get_network_info():
+    net = psutil.net_io_counters()
+    return {
+        "bytes_sent": net.bytes_sent,
+        "bytes_recv": net.bytes_recv,
+        "packets_sent": net.packets_sent,
+        "packets_recv": net.packets_recv,
+        "errin": net.errin,
+        "errout": net.errout,
+        "dropin": net.dropin,
+        "dropout": net.dropout
+    }
+
 def get_uptime():
     return time.time() - psutil.boot_time()
