@@ -3,17 +3,31 @@ from flask import current_app
 
 class DockerService:
     def __init__(self):
+        self.client = None
+
+    def get_client(self):
+        if self.client:
+            try:
+                self.client.ping()
+                return self.client
+            except Exception:
+                self.client = None
+        
         try:
             self.client = docker.from_env()
+            self.client.ping()  # Verify connection
+            return self.client
         except Exception as e:
-            print(f"Error connecting to Docker: {e}")
+            print(f"Docker connection error: {e}")
             self.client = None
+            return None
 
     def list_containers(self, all=True):
-        if not self.client:
+        client = self.get_client()
+        if not client:
             return []
         
-        containers = self.client.containers.list(all=all)
+        containers = client.containers.list(all=all)
         return [
             {
                 "id": c.short_id,
@@ -25,11 +39,12 @@ class DockerService:
         ]
 
     def manage_container(self, container_id, action):
-        if not self.client:
+        client = self.get_client()
+        if not client:
             return False, "Docker client not available"
         
         try:
-            container = self.client.containers.get(container_id)
+            container = client.containers.get(container_id)
             if action == "start":
                 container.start()
             elif action == "stop":
@@ -45,11 +60,12 @@ class DockerService:
             return False, str(e)
 
     def get_container_logs(self, container_id, tail=100):
-        if not self.client:
+        client = self.get_client()
+        if not client:
             return None
         
         try:
-            container = self.client.containers.get(container_id)
+            container = client.containers.get(container_id)
             logs = container.logs(tail=tail).decode('utf-8')
             return logs
         except Exception as e:

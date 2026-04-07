@@ -24,4 +24,4 @@ if __name__ == "__main__":
     # --no-reload is passed by start.py to prevent Flask from spawning
     # a reloader child process that survives parent termination.
     use_reloader = "--no-reload" not in sys.argv
-    app.run(debug=True, use_reloader=use_reloader)
+    app.run(debug=True, use_reloader=use_reloader,host='0.0.0.0')
